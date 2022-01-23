@@ -17,7 +17,6 @@ public class MainService {
 
     public String getInfo() {
 
-        
 
         return "main";
     }
