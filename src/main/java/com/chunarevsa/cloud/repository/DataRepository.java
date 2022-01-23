@@ -1,5 +1,9 @@
 package com.chunarevsa.cloud.repository;
 
-public class DataRepository {
+import com.chunarevsa.cloud.entity.Contents;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DataRepository extends JpaRepository<Contents, Long>  {
 
 }
