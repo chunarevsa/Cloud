@@ -137,7 +137,7 @@ public class ScheduledTasks {
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getBucketId()));
     tempContents.clear();
     System.err.println("Количество новых записей :" + newObject);
-    System.err.println("Количество новых записей :" + editedObject);
+    System.err.println("Количество измененных записей :" + editedObject);
     System.err.println("Количество объектов без изменений :" + oldObject);
     
  
