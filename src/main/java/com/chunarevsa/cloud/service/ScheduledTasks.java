@@ -75,9 +75,12 @@ public class ScheduledTasks {
     AdvancedXMLHandler handler = new AdvancedXMLHandler();
     parser.parse(new File("src/main/resources/cloudaware-test.xml"), handler);
 
+    //System.err.println(contents);
     for (Content content: contents) {
         System.out.println(content);
     } 
+    
+    System.err.println(contents.size());
 
 	log.info("База данных успешно обновлена", dateFormat.format(new Date()));
 	}
@@ -85,7 +88,7 @@ public class ScheduledTasks {
     private static class AdvancedXMLHandler extends DefaultHandler {
 
         private String key;
-        private String lastModifided;
+        private String lastModified;
         private String eTag;
         private String size;
         private String lastElementName;
@@ -111,18 +114,19 @@ public class ScheduledTasks {
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
             //System.err.println("endElement");
+
             if ( (key != null && !key.isEmpty()) && 
-                 (lastModifided != null && !lastModifided.isEmpty()) &&
+                 (lastModified != null && !lastModified.isEmpty()) &&
                  (eTag != null && !eTag.isEmpty()) &&
                  (size != null && !size.isEmpty()) ) {
                 
-                Content newContent = new Content(key, lastModifided, eTag, size);
+                Content newContent = new Content(key, lastModified, eTag, size);
                 System.err.println(newContent.getContentKey());
 
-                contents.add(new Content(key, lastModifided, eTag, size));
+                contents.add(new Content(key, lastModified, eTag, size));
 
                 key = null;
-                lastModifided = null;
+                lastModified = null;
                 eTag = null;
                 size = null;
             }
@@ -138,22 +142,19 @@ public class ScheduledTasks {
         public void characters(char[] ch, int start, int length) throws SAXException {
             //System.err.println("characters");
 
-            String information = new String(ch, start, length);
+            String info = new String(ch, start, length);
+            
+            String information = info.replace("\"", "").replace("\n", "").trim();
             //System.err.println(information);
 
-
-            information = information.replace("\n", "\"").trim();
-
-            System.err.println(information);
-
             if (!information.isEmpty()) {
-                if (lastElementName.equals("key"))
+                if (lastElementName.equalsIgnoreCase("key"))
                     key = information;
-                if (lastElementName.equals("lastModifided"))
-                    lastModifided = information;
-                if (lastElementName.equals("eTag"))
+                if (lastElementName.equalsIgnoreCase("lastModified"))
+                    lastModified = information;
+                if (lastElementName.equalsIgnoreCase("eTag"))
                     eTag = information;
-                if (lastElementName.equals("size"))
+                if (lastElementName.equalsIgnoreCase("size"))
                     size = information; 
          
             }
