@@ -2,10 +2,17 @@ package com.chunarevsa.cloud.entity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /*  <Contents>
             <Key>file_2015-08-06.txt</Key>
@@ -40,22 +47,32 @@ public class Content {
     @Column(name = "SIZE")
     private String size;
 
-    //private Owner owner;
+    @Column(name = "TYPE", nullable = false)
+	@Enumerated (EnumType.STRING)
+    private StorageClass storageClass;
+
+    @JsonIgnore
+	@ManyToOne (fetch = FetchType.EAGER)
+	@JoinColumn (name = "OWNER_ID", insertable = false, updatable = false)
+    private Owner owner;
 
     public Content() {
     }
 
-    public Content(String contentKey, String lastModifided, String eTag, String size) {
+    public Content(Long id, String contentKey, String lastModifided, String eTag, String size, StorageClass storageClass, Owner owner) {
+        this.id = id;
         this.contentKey = contentKey;
         this.lastModifided = lastModifided;
         this.eTag = eTag;
         this.size = size;
+        this.storageClass = storageClass;
+        this.owner = owner;
     }
+
 
     public Long getId() {
         return this.id;
     }
-
     public void setId(Long id) {
         this.id = id;
     }
@@ -91,7 +108,22 @@ public class Content {
     public void setSize(String size) {
         this.size = size;
     }
-  
+
+    public StorageClass getStorageClass() {
+        return this.storageClass;
+    }
+
+    public void setStorageClass(StorageClass storageClass) {
+        this.storageClass = storageClass;
+    }
+
+    public Owner getOwner() {
+        return this.owner;
+    }
+
+    public void setOwner(Owner owner) {
+        this.owner = owner;
+    }
 
     @Override
     public String toString() {
@@ -101,9 +133,9 @@ public class Content {
             ", lastModifided='" + getLastModifided() + "'" +
             ", eTag='" + getETag() + "'" +
             ", size='" + getSize() + "'" +
+            ", storageClass='" + getStorageClass() + "'" +
+            ", owner='" + getOwner() + "'" +
             "}";
     }
-
-
 
 } 
