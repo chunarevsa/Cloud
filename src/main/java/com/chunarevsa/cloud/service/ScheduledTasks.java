@@ -1,6 +1,5 @@
 package com.chunarevsa.cloud.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -9,16 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -29,6 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 
 @Component
@@ -51,38 +43,32 @@ public class ScheduledTasks {
         <StorageClass>STANDARD</StorageClass>
     </Contents> */
 
-	@Scheduled(fixedRate = 300000)
+	@Scheduled(fixedRate = 60000)
 	public void updateInfo() throws ParserConfigurationException, MalformedURLException, IOException, SAXException {
     
-    log.info("Старт обновления базы данных", dateFormat.format(new Date()));
+    log.info("Старт обновления базы данных" + dateFormat.format(new Date()));
 
 
-	/* String url = "https://s3.amazonaws.com/cloudaware-test";
-    DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-    f.setNamespaceAware(false);
-    f.setValidating(false);
-    DocumentBuilder b = f.newDocumentBuilder();
+	String url = "https://s3.amazonaws.com/cloudaware-test";
+    
+    SAXParserFactory factory = SAXParserFactory.newInstance(); //
+    factory.setNamespaceAware(false);
+    factory.setValidating(false);
+
     URLConnection urlConnection = new URL(url).openConnection();
     urlConnection.addRequestProperty("Accept", "application/xml");
-    Document doc = b.parse(urlConnection.getInputStream());
-    doc.getDocumentElement().normalize();
-    System.out.println ("Root element: " +  doc.getDocumentElement().getNodeName());
-    System.out.println(doc.toString());  */
-    
-    SAXParserFactory factory = SAXParserFactory.newInstance();
-    SAXParser parser = factory.newSAXParser();
 
+    SAXParser parser = factory.newSAXParser(); //
     AdvancedXMLHandler handler = new AdvancedXMLHandler();
-    parser.parse(new File("src/main/resources/cloudaware-test.xml"), handler);
+    parser.parse(urlConnection.getInputStream(), handler);
 
-    //System.err.println(contents);
     for (Content content: contents) {
         System.out.println(content);
     } 
     
     System.err.println(contents.size());
 
-	log.info("База данных успешно обновлена", dateFormat.format(new Date()));
+	log.info("База данных успешно обновлена" + dateFormat.format(new Date()));
 	}
 
     private static class AdvancedXMLHandler extends DefaultHandler {
