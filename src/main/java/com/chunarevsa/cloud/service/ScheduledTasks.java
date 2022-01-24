@@ -66,7 +66,9 @@ public class ScheduledTasks {
     parser.parse(urlConnection.getInputStream(), handler);
 
     System.err.println("Успешный парсинг");
-    int i = 0;
+    int newObject = 0; //новых записей
+    int editedObject = 0; // измененных записей
+    int oldObject = 0;
     for (TempContent tempContent: tempContents) {
 
         Content newContent = contentsRepository.findByContentKey(tempContent.getContentKey()).orElse(null);
@@ -86,7 +88,7 @@ public class ScheduledTasks {
             }   
             
             validateAndSaveOwner(tempContent, newContent);
-            i++;
+            newObject++;
     
         } else if (!newContent.getLastModifided().equalsIgnoreCase(tempContent.getLastModified())) {
             
@@ -101,9 +103,12 @@ public class ScheduledTasks {
             }
 
             validateAndSaveOwner(tempContent, newContent);
-            i++;
+            editedObject++;
 
-        } 
+        } else {
+            oldObject++;
+        }
+
         
         
 
@@ -131,7 +136,10 @@ public class ScheduledTasks {
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getDisplayName()));
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getBucketId()));
     tempContents.clear();
-    System.err.println("Количество изменений :" + i);
+    System.err.println("Количество новых записей :" + newObject);
+    System.err.println("Количество новых записей :" + editedObject);
+    System.err.println("Количество объектов без изменений :" + oldObject);
+    
  
 	log.info("База данных успешно обновлена :" + dateFormat.format(new Date()));
 	}
