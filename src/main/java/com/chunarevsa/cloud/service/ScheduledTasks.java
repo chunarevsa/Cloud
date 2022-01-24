@@ -46,7 +46,7 @@ public class ScheduledTasks {
         this.contentsRepository = contentsRepository;
     }
     
-	@Scheduled(fixedRate = 120000) //TODO: 300000
+	@Scheduled(fixedRate = 60000) //TODO: 300000
 	public void updateInfo() throws ParserConfigurationException, MalformedURLException, IOException, SAXException {
     
     log.info("Старт обновления базы данных :" + dateFormat.format(new Date()));
@@ -65,47 +65,47 @@ public class ScheduledTasks {
     AdvancedXMLHandler handler = new AdvancedXMLHandler();
     parser.parse(urlConnection.getInputStream(), handler);
 
-    System.err.println("1");
-
+    System.err.println("Успешный парсинг");
+    int i = 0;
     for (TempContent tempContent: tempContents) {
 
-        Content content = contentsRepository.findByContentKey(tempContent.getContentKey()).orElse(null);
-
-        if (content == null) { // убрать двойные if
+        Content newContent = contentsRepository.findByContentKey(tempContent.getContentKey()).orElse(null);
+        
+        if (newContent == null) { // убрать двойные if
             
-            if (content.getLastModifided().equalsIgnoreCase(tempContent.getLastModified())) {
+            newContent = new Content();
+            newContent.setContentKey(tempContent.getContentKey());
+            newContent.setLastModifided(tempContent.getLastModified());
+            newContent.setETag(tempContent.getETag());
+            newContent.setSize(tempContent.getSize()); // первая версия версии 
 
+            if (tempContent.getStorageClass().equalsIgnoreCase("STANDARD")) {
+                newContent.setStorageClass(StorageClass.STANDARD);
+            } else {
+                newContent.setStorageClass(StorageClass.NOT_STANDARD);
+            }   
+            
+            validateAndSaveOwner(tempContent, newContent);
+            i++;
+    
+        } else if (!newContent.getLastModifided().equalsIgnoreCase(tempContent.getLastModified())) {
+            
+            newContent.setLastModifided(tempContent.getLastModified());
+            newContent.setETag(tempContent.getETag());
+            newContent.setSize(tempContent.getSize()); // изменение версии 
+
+            if (tempContent.getStorageClass().equalsIgnoreCase("STANDARD")) {
+                newContent.setStorageClass(StorageClass.STANDARD);
+            } else {
+                newContent.setStorageClass(StorageClass.NOT_STANDARD);
             }
 
+            validateAndSaveOwner(tempContent, newContent);
+            i++;
 
-        } else {}
-        
-        Content newContent = new Content();
-        newContent.setContentKey(tempContent.getContentKey());
-        newContent.setLastModifided(tempContent.getLastModified());
-        newContent.setETag(tempContent.getETag());
-        newContent.setSize(tempContent.getSize());
-        if (tempContent.getStorageClass().equalsIgnoreCase("STANDARD")) {
-            newContent.setStorageClass(StorageClass.STANDARD);
-        } else {
-            newContent.setStorageClass(StorageClass.NOT_STANDARD);
-        }
-
-       
-        Owner owner = ownerRepository.findByBucketId(tempContent.getBucketId()).orElse(null);
-        if (owner == null) {
-            System.err.println("owner :null");
-            owner = new Owner();
-            owner.setBucketId(tempContent.getBucketId());
-            owner.setDisplayName(tempContent.getDisplayName());
         } 
-
-        // четвёртый вар. новый список через set
-        owner.getContents().add(newContent);
-        Set<Content> contents = owner.getContents();
-        owner.setContents(contents); 
-
-        Owner savedOwner = ownerRepository.save(owner);
+        
+        
 
         //System.err.println(savedOwner);
 
@@ -131,20 +131,28 @@ public class ScheduledTasks {
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getDisplayName()));
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getBucketId()));
     tempContents.clear();
+    System.err.println("Количество изменений :" + i);
  
 	log.info("База данных успешно обновлена :" + dateFormat.format(new Date()));
 	}
 
-    private Set<Content> saveContents(Set<Content> contents) {
-        return contents.stream()
-                .map(content -> saveContent(content))
-                .collect(Collectors.toSet());
+    private void validateAndSaveOwner(TempContent tempContent, Content newContent) {
+        
+        Owner owner = ownerRepository.findByBucketId(tempContent.getBucketId()).orElse(null);
 
-    }
+        if (owner == null) {
+            System.err.println("Новый владелец");
+            owner = new Owner();
+            owner.setBucketId(tempContent.getBucketId());
+            owner.setDisplayName(tempContent.getDisplayName());
+        } 
 
-    private Content saveContent(Content content) {
-        return contentsRepository.save(content);
+        // четвёртый вар. новый список через set
+        owner.getContents().add(newContent);
+        Set<Content> contents = owner.getContents();
+        owner.setContents(contents); 
 
+        ownerRepository.save(owner);
     }
 
     private static class AdvancedXMLHandler extends DefaultHandler {
@@ -220,7 +228,7 @@ public class ScheduledTasks {
             //System.err.println(information);
 
             if (!information.isEmpty()) {
-                if (lastElementName.equalsIgnoreCase("key"))
+                if (lastElementName.equalsIgnoreCase("Key"))
                     key = information;
                 if (lastElementName.equalsIgnoreCase("lastModified"))
                     lastModified = information;
@@ -228,7 +236,7 @@ public class ScheduledTasks {
                     eTag = information;
                 if (lastElementName.equalsIgnoreCase("size"))
                     size = information;
-                if (lastElementName.equalsIgnoreCase("id"))
+                if (lastElementName.equals("ID"))
                     bucketId = information; 
                 if (lastElementName.equalsIgnoreCase("displayName"))
                     displayName = information; 
