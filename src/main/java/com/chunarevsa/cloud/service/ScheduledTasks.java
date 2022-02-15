@@ -1,9 +1,11 @@
 package com.chunarevsa.cloud.service;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,6 +39,18 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
 
 
 @Component
@@ -93,25 +107,52 @@ public class ScheduledTasks {
     System.err.println("5");
     fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
     System.err.println("6"); */
-    URL website = new URL(url);
-    
-    //Files.deleteIfExists(Paths.get(path));
 
+    //
+   /*  URL website = new URL(url);
     File file = new File("");
-
     //FileUtils.copyURLToFile(website, file);
-    
     System.err.println("TYT");
     InputStream inputStream = website.openStream();
     Files.copy(inputStream, file.toPath());
-
-
     SAXParserFactory factory = SAXParserFactory.newInstance();
     SAXParser parser = factory.newSAXParser();
-
     AdvancedXMLHandler handler = new AdvancedXMLHandler();
-    parser.parse(file, handler);
-    
+    parser.parse(file, handler); */
+
+    //
+    System.err.println("1");
+    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    System.err.println("2");
+    factory.setNamespaceAware(false);
+    factory.setValidating(false);
+    System.err.println("3");
+    URLConnection urlConnection = new URL(url).openConnection();
+    urlConnection.addRequestProperty("Accept", "application/xml");
+    System.err.println("4");
+    // Получили из фабрики билдер, который парсит XML, создает структуру Document в виде иерархического дерева.
+    DocumentBuilder builder = factory.newDocumentBuilder();
+    // Запарсили XML, создав структуру Document. Теперь у нас есть доступ ко всем элементам, каким нам нужно.
+    System.err.println("5");
+    Document document = builder.parse(urlConnection.getInputStream());
+    System.err.println("6");
+    String element = reader.readLine();
+    System.err.println("7");
+    NodeList matchedElementsList = document.getElementsByTagName(element);
+    System.err.println("8");    
+    if (matchedElementsList.getLength() == 0) {
+        System.out.println("Тег " + element + " не был найден в файле.");
+    } else {
+        // Получение первого элемента.
+        Node foundedElement = matchedElementsList.item(0);
+
+        System.out.println("Элемент был найден!");
+
+        // Если есть данные внутри, вызов метода для вывода всей информации
+        if (foundedElement.hasChildNodes())
+            printInfoAboutAllChildNodes(foundedElement.getChildNodes());
+    }
     
 
     log.info("Успешный парсинг");
@@ -126,7 +167,7 @@ public class ScheduledTasks {
     } */
 
 
-    for (TempContent tempContent: tempContents) {
+    /* for (TempContent tempContent: tempContents) {
 
         Content newContent = contentsRepository.findByContentKey(tempContent.getContentKey()).orElse(null);
         
@@ -166,11 +207,11 @@ public class ScheduledTasks {
             oldObject++;
         }
         
-    } 
+    }  
     
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getDisplayName()));
     ownerRepository.findAll().forEach(owner -> System.out.println(owner.getBucketId()));
-    tempContents.clear();
+    tempContents.clear();*/
     System.err.println("Количество новых записей :" + newObject);
     System.err.println("Количество измененных записей :" + editedObject);
     System.err.println("Количество объектов без изменений :" + oldObject);
@@ -201,6 +242,36 @@ public class ScheduledTasks {
         ownerRepository.save(owner);
 
     }
+
+private static void printInfoAboutAllChildNodes(NodeList list) {
+        for (int i = 0; i < list.getLength(); i++) {
+            Node node = list.item(i);
+
+            // У элементов есть два вида узлов - другие элементы или текстовая информация. Потому нужно разбираться две ситуации отдельно.
+            if (node.getNodeType() == Node.TEXT_NODE) {
+                // Фильтрация информации, так как пробелы и переносы строчек нам не нужны. Это не информация.
+                String textInformation = node.getNodeValue().replace("\n", "").trim();
+
+                if(!textInformation.isEmpty())
+                    System.out.println("Внутри элемента найден текст: " + node.getNodeValue());
+            }
+            // Если это не текст, а элемент, то обрабатываем его как элемент.
+            else {
+                System.out.println("Найден элемент: " + node.getNodeName() + ", его атрибуты:");
+
+                // Получение атрибутов
+                NamedNodeMap attributes = node.getAttributes();
+
+                // Вывод информации про все атрибуты
+                for (int k = 0; k < attributes.getLength(); k++)
+                    System.out.println("Имя атрибута: " + attributes.item(k).getNodeName() + ", его значение: " + attributes.item(k).getNodeValue());
+            }
+
+            // Если у данного элемента еще остались узлы, то вывести всю информацию про все его узлы.
+            if (node.hasChildNodes())
+                printInfoAboutAllChildNodes(node.getChildNodes());
+        }
+    }   
 
     private static class AdvancedXMLHandler extends DefaultHandler {
 
